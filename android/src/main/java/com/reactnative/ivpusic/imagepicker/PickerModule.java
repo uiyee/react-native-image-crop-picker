@@ -16,6 +16,7 @@ import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.FileProvider;
 import android.util.Base64;
+import android.util.Log;
 import android.webkit.MimeTypeMap;
 
 import com.facebook.react.bridge.ActivityEventListener;
@@ -46,6 +47,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 
+import me.iwf.photopicker.PhotoPicker;
+
 class PickerModule extends ReactContextBaseJavaModule implements ActivityEventListener {
 
     private static final int IMAGE_PICKER_REQUEST = 61110;
@@ -73,6 +76,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     private boolean hideBottomControls = false;
     private boolean enableRotationGesture = false;
     private ReadableMap options;
+    private int maxFiles = 1;
 
 
     //Grey 800
@@ -122,6 +126,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         showCropGuidelines = options.hasKey("showCropGuidelines") ? options.getBoolean("showCropGuidelines") : showCropGuidelines;
         hideBottomControls = options.hasKey("hideBottomControls") ? options.getBoolean("hideBottomControls") : hideBottomControls;
         enableRotationGesture = options.hasKey("enableRotationGesture") ? options.getBoolean("enableRotationGesture") : enableRotationGesture;
+        maxFiles = options.hasKey("maxFiles") ? options.getInt("maxFiles") : maxFiles;
         this.options = options;
     }
 
@@ -311,24 +316,30 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 
     private void initiatePicker(final Activity activity) {
         try {
-            final Intent galleryIntent = new Intent(Intent.ACTION_PICK);
-
-            if (cropping || mediaType.equals("photo")) {
-                galleryIntent.setType("image/*");
-            } else if (mediaType.equals("video")) {
-                galleryIntent.setType("video/*");
-            } else {
-                galleryIntent.setType("*/*");
-                String[] mimetypes = {"image/*", "video/*"};
-                galleryIntent.putExtra(Intent.EXTRA_MIME_TYPES, mimetypes);
-            }
-
-            galleryIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, multiple);
-            galleryIntent.setAction(Intent.ACTION_GET_CONTENT);
-            galleryIntent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
-
-            final Intent chooserIntent = Intent.createChooser(galleryIntent, "Pick an image");
-            activity.startActivityForResult(chooserIntent, IMAGE_PICKER_REQUEST);
+//            final Intent galleryIntent = new Intent(Intent.ACTION_PICK);
+//
+//            if (cropping || mediaType.equals("photo")) {
+//                galleryIntent.setType("image/*");
+//            } else if (mediaType.equals("video")) {
+//                galleryIntent.setType("video/*");
+//            } else {
+//                galleryIntent.setType("*/*");
+//                String[] mimetypes = {"image/*", "video/*"};
+//                galleryIntent.putExtra(Intent.EXTRA_MIME_TYPES, mimetypes);
+//            }
+//
+//            galleryIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, multiple);
+//            galleryIntent.setAction(Intent.ACTION_GET_CONTENT);
+//            galleryIntent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+//
+//            final Intent chooserIntent = Intent.createChooser(galleryIntent, "请选择打开方式");
+//            activity.startActivityForResult(chooserIntent, IMAGE_PICKER_REQUEST);
+            PhotoPicker.builder().
+                    setPhotoCount(maxFiles).
+                    setShowCamera(false).
+                    setShowGif(false).
+                    setPreviewEnabled(true).
+                    start(activity, PhotoPicker.REQUEST_CODE);
         } catch (Exception e) {
             resultCollector.notifyProblem(E_FAILED_TO_SHOW_PICKER, e);
         }
@@ -670,6 +681,50 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             resultCollector.notifyProblem(E_PICKER_CANCELLED_KEY, E_PICKER_CANCELLED_MSG);
         }
     }
+    private void photoPickerResult(Activity activity, final int requestCode, final int resultCode, final Intent data)
+    {
+        if(data != null)
+        {
+            ArrayList<String> photos =
+                    data.getStringArrayListExtra(PhotoPicker.KEY_SELECTED_PHOTOS);
+            if(photos == null || photos.size() <= 0)
+            {
+                resultCollector.notifyProblem(E_NO_IMAGE_DATA_FOUND, "Cannot resolve image url");
+                return;
+            }
+            if (multiple)
+            {
+                try {
+
+                    resultCollector.setWaitCount(photos.size());
+                    for (int i = 0; i < photos.size(); i++) {
+                        getAsyncSelection(activity, Uri.fromFile(new File(photos.get(i))), false);
+                    }
+                } catch (Exception ex) {
+                    resultCollector.notifyProblem(E_NO_IMAGE_DATA_FOUND, ex.getMessage());
+                }
+            }
+            else
+            {
+                Uri uri = Uri.fromFile(new File(photos.get(0)));
+                if (uri == null) {
+                    resultCollector.notifyProblem(E_NO_IMAGE_DATA_FOUND, "Cannot resolve image url");
+                    return;
+                }
+
+                if (cropping) {
+                    startCropping(activity, uri);
+                } else {
+                    try {
+                        getAsyncSelection(activity, uri, false);
+                    } catch (Exception ex) {
+                        resultCollector.notifyProblem(E_NO_IMAGE_DATA_FOUND, ex.getMessage());
+                    }
+                }
+            }
+
+        }
+    }
 
     @Override
     public void onActivityResult(Activity activity, final int requestCode, final int resultCode, final Intent data) {
@@ -679,6 +734,9 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             cameraPickerResult(activity, requestCode, resultCode, data);
         } else if (requestCode == UCrop.REQUEST_CROP) {
             croppingResult(activity, requestCode, resultCode, data);
+        } else if(requestCode == PhotoPicker.REQUEST_CODE)
+        {
+            photoPickerResult(activity, requestCode, resultCode, data);
         }
     }
 

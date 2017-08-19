@@ -129,7 +129,8 @@ export default class App extends Component {
   pickMultiple() {
     ImagePicker.openPicker({
       multiple: true,
-      waitAnimationEnd: false
+      waitAnimationEnd: false,
+      maxFiles: 5
     }).then(images => {
       this.setState({
         image: null,

@@ -27,6 +27,15 @@
         </intent-filter>
       </activity>
       <activity android:name="com.facebook.react.devsupport.DevSettingsActivity" />
+    <activity
+        android:theme="@style/customTheme"
+        android:name="me.iwf.photopicker.PhotoPickerActivity"
+        />
+
+    <activity
+        android:theme="@style/Theme.AppCompat.NoActionBar"
+        android:name="me.iwf.photopicker.PhotoPagerActivity"
+        />
     </application>
 
 </manifest>
