@@ -4,14 +4,5 @@
     <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <!-- Customize your theme here. -->
     </style>
-    <style name="actionBarTheme" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
-        <item name="android:textColorPrimary">@android:color/white</item>
-        <item name="actionBarSize">@dimen/actionBarSize</item>
-    </style>
-    <style name="customTheme" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="actionBarTheme">@style/actionBarTheme</item>
-        <item name="colorPrimary">#303339</item>
-        <item name="actionBarSize">@dimen/actionBarSize</item>
-        <item name="colorPrimaryDark">#303339</item>
-    </style>
+
 </resources>
