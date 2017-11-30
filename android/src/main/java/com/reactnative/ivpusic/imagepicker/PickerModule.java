@@ -70,6 +70,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     private String mediaType = "any";
     private boolean multiple = false;
     private boolean includeBase64 = false;
+    private boolean includeExif = false;
     private boolean cropping = false;
     private boolean cropperCircleOverlay = false;
     private boolean showCropGuidelines = true;
@@ -84,6 +85,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     private String cropperActiveWidgetColor = DEFAULT_TINT;
     private String cropperStatusBarColor = DEFAULT_TINT;
     private String cropperToolbarColor = DEFAULT_TINT;
+    private String cropperToolbarTitle = null;
 
     //Light Blue 500
     private final String DEFAULT_WIDGET_COLOR = "#03A9F4";
@@ -116,12 +118,14 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         mediaType = options.hasKey("mediaType") ? options.getString("mediaType") : mediaType;
         multiple = options.hasKey("multiple") && options.getBoolean("multiple");
         includeBase64 = options.hasKey("includeBase64") && options.getBoolean("includeBase64");
+        includeExif = options.hasKey("includeExif") && options.getBoolean("includeExif");
         width = options.hasKey("width") ? options.getInt("width") : width;
         height = options.hasKey("height") ? options.getInt("height") : height;
         cropping = options.hasKey("cropping") ? options.getBoolean("cropping") : cropping;
         cropperActiveWidgetColor = options.hasKey("cropperActiveWidgetColor") ? options.getString("cropperActiveWidgetColor") : cropperActiveWidgetColor;
         cropperStatusBarColor = options.hasKey("cropperStatusBarColor") ? options.getString("cropperStatusBarColor") : cropperStatusBarColor;
         cropperToolbarColor = options.hasKey("cropperToolbarColor") ? options.getString("cropperToolbarColor") : cropperToolbarColor;
+        cropperToolbarTitle = options.hasKey("cropperToolbarTitle") ? options.getString("cropperToolbarTitle") : null;
         cropperCircleOverlay = options.hasKey("cropperCircleOverlay") ? options.getBoolean("cropperCircleOverlay") : cropperCircleOverlay;
         showCropGuidelines = options.hasKey("showCropGuidelines") ? options.getBoolean("showCropGuidelines") : showCropGuidelines;
         hideBottomControls = options.hasKey("hideBottomControls") ? options.getBoolean("hideBottomControls") : hideBottomControls;
@@ -550,6 +554,15 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             image.putString("data", getBase64StringFromFile(compressedImagePath));
         }
 
+        if (includeExif) {
+            try {
+                WritableMap exif = ExifExtractor.extract(path);
+                image.putMap("exif", exif);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+
         return image;
     }
 
@@ -578,6 +591,9 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         options.setCircleDimmedLayer(cropperCircleOverlay);
         options.setShowCropGrid(showCropGuidelines);
         options.setHideBottomControls(hideBottomControls);
+        if (cropperToolbarTitle != null) {
+            options.setToolbarTitle(cropperToolbarTitle);    
+        }
         if (enableRotationGesture) {
             // UCropActivity.ALL = enable both rotation & scaling
             options.setAllowedGestures(
