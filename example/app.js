@@ -133,11 +133,8 @@ export default class App extends Component {
     ImagePicker.openPicker({
       multiple: true,
       waitAnimationEnd: false,
-<<<<<<< HEAD
-      maxFiles: 5
-=======
-      includeExif: true,
->>>>>>> ivpusic/master
+      maxFiles: 5,
+      includeExif: true
     }).then(images => {
       this.setState({
         image: null,
